@@ -1,4 +1,4 @@
-# Design & UX Plan — PR Lens
+# Design & UX Plan — PR Diagram
 
 **Status:** MVP design locked; open questions noted
 **Last updated:** May 2026

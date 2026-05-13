@@ -1,4 +1,4 @@
-# Technical Discovery — PR Lens
+# Technical Discovery — PR Diagram
 
 **Status:** Architecture locked for MVP; production paths noted
 **Last updated:** May 2026
@@ -399,7 +399,7 @@ We log request timestamps, response durations, error codes, and aggregate token 
 
 ```
 git clone <repo>
-cd pr-lens
+cd pr-diagram
 npm install
 cp .env.local.example .env.local      # optionally add ANTHROPIC_API_KEY
 npm run dev
@@ -446,5 +446,5 @@ These are not blockers for the MVP but should be answered before any production 
 2. **Streaming LLM response.** Worth the engineering cost to bring perceived latency from 12s to 2s? Probably yes for v2.
 3. **Golden-set evaluation.** How do we measure analysis quality? Hand-labeling 50-100 PRs, then comparing against future model output. Whose labels? PMs? Engineers? Both?
 4. **Fine-tuning vs. prompting.** Sonnet handles the workload at acceptable quality. Is there value in a fine-tuned smaller model? Probably not until volume justifies it.
-5. **Pricing model.** If this becomes a product, is it per-user, per-PR, per-repo? PR Lens makes the most sense as a per-organization SaaS, billed by repo connected.
+5. **Pricing model.** If this becomes a product, is it per-user, per-PR, per-repo? PR Diagram makes the most sense as a per-organization SaaS, billed by repo connected.
 6. **Self-hosted option.** Large enterprises will not send code to a SaaS. Open-source the client + bring-your-own LLM-key is a credible path.

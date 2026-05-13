@@ -1,4 +1,4 @@
-# Testing Plan — PR Lens
+# Testing Plan — PR Diagram
 
 The minimum testing setup to start. Optimized for fast feedback on the deterministic core (where most of the value and risk lives) and for TDD-friendly cycles. Heavier testing (E2E, visual regression) is deliberately deferred.
 
@@ -39,7 +39,7 @@ These are the highest-value, lowest-friction tests. Pure functions over data —
 
 ### Tier 3 — UI components (sparingly)
 
-The PRLens view components are mostly data-in/JSX-out — typecheck already catches most regressions. Test only:
+The PRDiagram view components are mostly data-in/JSX-out — typecheck already catches most regressions. Test only:
 
 - Components with branching behavior (e.g., a panel that switches between `BeforeAfter` and `Empty` states).
 - Components with user interaction (tabs, expandable sections).
@@ -70,7 +70,7 @@ app/_lib/
 ```
 
 ```
-app/_pages/PRLens/components/
+app/_pages/PRDiagram/components/
 ├── ChangeTabs.tsx
 └── ChangeTabs.test.tsx
 ```

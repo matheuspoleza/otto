@@ -1,4 +1,4 @@
-# PRD — PR Lens
+# PRD — PR Diagram
 
 **Status:** Discovery → MVP scope locked
 **Last updated:** May 2026

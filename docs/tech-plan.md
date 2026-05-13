@@ -1,8 +1,8 @@
-# PR Lens — Tech Plan
+# PR Diagram — Tech Plan
 
 ## 1. What we're building
 
-PR Lens turns a GitHub pull request into a visual, navigable summary. Instead of skimming hundreds of diff lines, the user sees four high-signal lenses on what changed:
+PR Diagram turns a GitHub pull request into a visual, navigable summary. Instead of skimming hundreds of diff lines, the user sees four high-signal lenses on what changed:
 
 - **UI** — before/after screenshots of affected routes
 - **API** — endpoint diffs with breaking/non-breaking classification
@@ -28,12 +28,12 @@ A repo is **eligible** if it has:
 | OpenAPI spec committed at a known path | Deterministic API diff | `oasdiff` |
 | Prisma schema + migrations | Deterministic data diff | `@prisma/internals.getDMMF` or raw `migration.sql` parsing |
 | Vercel preview deploys configured | Deterministic visual diff | Playwright screenshots |
-| `prlens.config.json` declaring routes + paths | Pinned config so we never have to guess | local file in target repo |
+| `prdiagram.config.json` declaring routes + paths | Pinned config so we never have to guess | local file in target repo |
 
 When a repo fails eligibility, the page renders a clear **"Repo not supported yet"** screen explaining exactly what's missing. The limitation becomes a feature.
 
 ```json
-// prlens.config.json — lives in the target repo
+// prdiagram.config.json — lives in the target repo
 {
   "preview": {
     "provider": "vercel",
@@ -80,7 +80,7 @@ LLM never produces the score itself, never invents tables or endpoints, and ever
 PR URL → fetch (GitHub API, public)
    │
    ├──→ Repo eligibility check
-   │       (TS? OpenAPI? Prisma? prlens.config? Vercel preview?)
+   │       (TS? OpenAPI? Prisma? prdiagram.config? Vercel preview?)
    │       └── if fails: render "not supported" screen
    │
    ├──→ Pillar 1: UI         (Playwright on Vercel preview vs main)
@@ -111,7 +111,7 @@ PR URL → fetch (GitHub API, public)
    Risk score (heuristic over signals)
               │
               ▼
-   PRLensData JSON → <PRLens data />
+   PRDiagramData JSON → <PRDiagram data />
 ```
 
 ---
@@ -188,7 +188,7 @@ A separate public repo we own. Demonstrates the full controlled stack and provid
 
 **Domain:** SaaS dashboard for project management with usage-based billing (think Linear with a billing module). Covers all 4 pillars naturally and has believable "dangerous" changes (billing, permissions).
 
-**Required tech:** Next.js 16, TypeScript, Prisma, committed `openapi.yaml`, Vercel preview, `prlens.config.json`.
+**Required tech:** Next.js 16, TypeScript, Prisma, committed `openapi.yaml`, Vercel preview, `prdiagram.config.json`.
 
 **Example PRs (created in this order):**
 
@@ -203,22 +203,22 @@ PR #4 is the main shareable demo: `prlens.app/{org}/pr-lens-demo/pull/4`.
 
 ---
 
-## 8. Code structure (PR Lens app itself)
+## 8. Code structure (PR Diagram app itself)
 
 The React side follows the `react-standards` skill in this repo (`.claude/skills/react-standards/SKILL.md`).
 
 ```
 app/
 ├── _pages/
-│   └── PRLens/
-│       ├── PRLens.page.tsx              # Orchestrator (data prop, owns activeTab state)
+│   └── PRDiagram/
+│       ├── PRDiagram.page.tsx              # Orchestrator (data prop, owns activeTab state)
 │       ├── utils.ts                     # timeAgo, stateLabel, getRiskDot
 │       ├── constants.ts                 # ACTION_ICON mapping
 │       └── components/
-│           ├── PRLensHeader.tsx
+│           ├── PRDiagramHeader.tsx
 │           ├── PRMetaHeader.tsx
 │           ├── ChangeTabs.tsx           # exports TabId
-│           ├── PRLensSidebar.tsx        # composes 3 cards
+│           ├── PRDiagramSidebar.tsx        # composes 3 cards
 │           ├── RiskScoreCard.tsx
 │           ├── RiskSignalsList.tsx
 │           ├── ActionableItemsList.tsx
@@ -231,7 +231,7 @@ app/
 │           ├── DataChangeView.tsx       # inlines NewTableCard, ModifiedTableCard, DroppedTableCard
 │           └── BusinessChangeView.tsx   # inlines BusinessRuleDiff
 ├── _lib/
-│   ├── types.ts                         # PRLensData contract
+│   ├── types.ts                         # PRDiagramData contract
 │   ├── github.ts                        # PR fetcher (TODO)
 │   ├── eligibility.ts                   # repo conformance check (TODO)
 │   ├── pillars/                         # 4 deterministic pillars (TODO)
@@ -254,10 +254,10 @@ app/
 
 ## 9. Data contract
 
-The pipeline produces `PRLensData` (see `app/_lib/types.ts`). All fields JSON-serializable across the RSC boundary.
+The pipeline produces `PRDiagramData` (see `app/_lib/types.ts`). All fields JSON-serializable across the RSC boundary.
 
 ```ts
-interface PRLensData {
+interface PRDiagramData {
   meta: { owner, repo, number, title, subtitle, author, state, mergedAt, htmlUrl, headSha };
   risk: { score, level, signals: RiskSignal[] };
   domains: string[];
@@ -288,8 +288,8 @@ interface PRLensData {
 
 Each step is shippable on its own. We can pause at any point and have a working partial product.
 
-1. ✅ Define `PRLensData` types
-2. ✅ Refactor PRLens UI to be data-driven, applying react-standards
+1. ✅ Define `PRDiagramData` types
+2. ✅ Refactor PRDiagram UI to be data-driven, applying react-standards
 3. Create reference repo `pr-lens-demo` (stack scaffold + PR #1: data-only)
 4. `_lib/github.ts` — public PR fetcher (`getPR`, `getFiles`, `getFileContent`)
 5. `_lib/eligibility.ts` — conformance detector + "not supported" screen
