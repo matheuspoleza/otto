@@ -1,6 +1,5 @@
-import { PRLens } from './_pages/PRLens/PRLens.page';
-import { samplePR } from './_fixtures/samplePR';
+import { Landing } from './_pages/Landing/Landing.page';
 
 export default function Home() {
-  return <PRLens data={samplePR} />;
+  return <Landing />;
 }
