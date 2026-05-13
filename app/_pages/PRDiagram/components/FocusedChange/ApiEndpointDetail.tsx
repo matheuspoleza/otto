@@ -1,25 +1,7 @@
 import type React from 'react';
 import { ArrowRight } from 'lucide-react';
-import type { APIChanges, EndpointChange } from '@/app/_lib/types';
-import { BeforeAfterPanel } from './BeforeAfterPanel';
-import { SectionHeader } from './SectionHeader';
-import { WarningBanner } from './WarningBanner';
-
-interface APIChangeViewProps {
-  data: APIChanges;
-}
-
-export const APIChangeView: React.FC<APIChangeViewProps> = ({ data }) => (
-  <div>
-    <SectionHeader title="API changes" description={data.description} />
-    <div className="space-y-5">
-      {data.endpoints.map((endpoint, i) => (
-        <EndpointDiff key={`${endpoint.method}-${endpoint.path}-${i}`} endpoint={endpoint} />
-      ))}
-    </div>
-    {data.warning && <WarningBanner text={data.warning} />}
-  </div>
-);
+import type { EndpointChange } from '@/app/_lib/types';
+import { BeforeAfterPanel } from './shared/BeforeAfterPanel';
 
 const CHANGE_TYPE_COLOR: Record<EndpointChange['changeType'], string> = {
   added: 'text-emerald-700',
@@ -28,11 +10,11 @@ const CHANGE_TYPE_COLOR: Record<EndpointChange['changeType'], string> = {
   modified: 'text-amber-700',
 };
 
-interface EndpointDiffProps {
+interface ApiEndpointDetailProps {
   endpoint: EndpointChange;
 }
 
-const EndpointDiff: React.FC<EndpointDiffProps> = ({ endpoint }) => {
+export const ApiEndpointDetail: React.FC<ApiEndpointDetailProps> = ({ endpoint }) => {
   const showRequest = endpoint.requestBefore !== null || endpoint.requestAfter !== null;
   const showResponse = endpoint.responseBefore !== null || endpoint.responseAfter !== null;
 
@@ -73,22 +55,29 @@ interface JsonBeforeAfterProps {
   after: unknown;
 }
 
-const JsonBeforeAfter: React.FC<JsonBeforeAfterProps> = ({ label, before, after }) => (
-  <>
-    <div className="text-[11px] font-mono text-neutral-400 mb-1">— {label}</div>
-    <div className="flex gap-3 items-stretch">
-      <BeforeAfterPanel label="Before" variant="before">
-        <JsonBlock value={before} />
-      </BeforeAfterPanel>
-      <div className="flex items-center text-neutral-300 px-1">
-        <ArrowRight className="w-4 h-4" />
+const JsonBeforeAfter: React.FC<JsonBeforeAfterProps> = ({ label, before, after }) => {
+  const beforeEmpty = before === null || before === undefined;
+  return (
+    <>
+      <div className="text-[11px] font-mono text-neutral-400 mb-1">— {label}</div>
+      <div className="flex gap-3 items-stretch">
+        {!beforeEmpty && (
+          <>
+            <BeforeAfterPanel label="Before" variant="before">
+              <JsonBlock value={before} />
+            </BeforeAfterPanel>
+            <div className="flex items-center text-neutral-300 px-1">
+              <ArrowRight className="w-4 h-4" />
+            </div>
+          </>
+        )}
+        <BeforeAfterPanel label={beforeEmpty ? 'New' : 'After'} variant="after">
+          <JsonBlock value={after} highlightDiffAgainst={before} />
+        </BeforeAfterPanel>
       </div>
-      <BeforeAfterPanel label="After" variant="after">
-        <JsonBlock value={after} highlightDiffAgainst={before} />
-      </BeforeAfterPanel>
-    </div>
-  </>
-);
+    </>
+  );
+};
 
 interface JsonBlockProps {
   value: unknown;

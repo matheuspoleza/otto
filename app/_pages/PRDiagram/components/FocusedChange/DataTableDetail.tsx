@@ -1,35 +1,11 @@
 import type React from 'react';
-import type { DataChanges, ModifiedTable, NewTable } from '@/app/_lib/types';
-import { SectionHeader } from './SectionHeader';
-import { WarningBanner } from './WarningBanner';
+import type { ModifiedTable, NewTable } from '@/app/_lib/types';
 
-interface DataChangeViewProps {
-  data: DataChanges;
-}
-
-export const DataChangeView: React.FC<DataChangeViewProps> = ({ data }) => (
-  <div>
-    <SectionHeader title="Data changes" description={data.description} />
-    <div className="space-y-4">
-      {data.newTables.map((table) => (
-        <NewTableCard key={table.name} table={table} />
-      ))}
-      {data.modifiedTables.map((table) => (
-        <ModifiedTableCard key={table.name} table={table} />
-      ))}
-      {data.droppedTables.map((name) => (
-        <DroppedTableCard key={name} name={name} />
-      ))}
-    </div>
-    {data.warning && <WarningBanner text={data.warning} />}
-  </div>
-);
-
-interface NewTableCardProps {
+interface NewTableDetailProps {
   table: NewTable;
 }
 
-const NewTableCard: React.FC<NewTableCardProps> = ({ table }) => (
+export const NewTableDetail: React.FC<NewTableDetailProps> = ({ table }) => (
   <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
     <div className="px-3.5 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -69,11 +45,11 @@ const NewTableCard: React.FC<NewTableCardProps> = ({ table }) => (
   </div>
 );
 
-interface ModifiedTableCardProps {
+interface ModifiedTableDetailProps {
   table: ModifiedTable;
 }
 
-const ModifiedTableCard: React.FC<ModifiedTableCardProps> = ({ table }) => (
+export const ModifiedTableDetail: React.FC<ModifiedTableDetailProps> = ({ table }) => (
   <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
     <div className="px-3.5 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
       <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
@@ -124,11 +100,11 @@ const ModifiedTableCard: React.FC<ModifiedTableCardProps> = ({ table }) => (
   </div>
 );
 
-interface DroppedTableCardProps {
+interface DroppedTableDetailProps {
   name: string;
 }
 
-const DroppedTableCard: React.FC<DroppedTableCardProps> = ({ name }) => (
+export const DroppedTableDetail: React.FC<DroppedTableDetailProps> = ({ name }) => (
   <div className="bg-white border border-rose-200 rounded-lg overflow-hidden">
     <div className="px-3.5 py-2 bg-rose-50 flex items-center gap-2">
       <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />

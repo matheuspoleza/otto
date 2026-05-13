@@ -6,10 +6,10 @@ import {
   GitHubRateLimitError,
   type GitHubPR,
   getPR,
-} from '@/app/_lib/github';
-import type { PRLensData } from '@/app/_lib/types';
+} from '@/app/_lib/adapters/github';
+import type { PRDiagramData } from '@/app/_lib/types';
 import { NotSupported } from '../NotSupported/NotSupported.page';
-import { PRLens } from '../PRLens/PRLens.page';
+import { PRDiagram } from '../PRDiagram/PRDiagram.page';
 import { RateLimitReached } from '../RateLimitReached/RateLimitReached.page';
 
 interface PRAnalysisPageProps {
@@ -19,7 +19,7 @@ interface PRAnalysisPageProps {
 }
 
 type AnalysisResult =
-  | { kind: 'ok'; data: PRLensData }
+  | { kind: 'ok'; data: PRDiagramData }
   | { kind: 'not-found' }
   | { kind: 'rate-limit'; resetAt: Date }
   | { kind: 'not-supported'; missing: MissingRequirement[]; htmlUrl: string };
@@ -63,5 +63,5 @@ export const PRAnalysisPage = async ({ owner, repo, number }: PRAnalysisPageProp
       />
     );
   }
-  return <PRLens data={result.data} />;
+  return <PRDiagram data={result.data} />;
 };

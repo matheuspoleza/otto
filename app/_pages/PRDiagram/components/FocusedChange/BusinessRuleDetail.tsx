@@ -1,32 +1,14 @@
 import type React from 'react';
 import { ArrowRight } from 'lucide-react';
-import type { BusinessChanges, BusinessRule } from '@/app/_lib/types';
-import { BeforeAfterPanel } from './BeforeAfterPanel';
-import { HighlightedText } from './HighlightedText';
-import { SectionHeader } from './SectionHeader';
-import { WarningBanner } from './WarningBanner';
+import type { BusinessRule } from '@/app/_lib/types';
+import { BeforeAfterPanel } from './shared/BeforeAfterPanel';
+import { HighlightedText } from './shared/HighlightedText';
 
-interface BusinessChangeViewProps {
-  data: BusinessChanges;
-}
-
-export const BusinessChangeView: React.FC<BusinessChangeViewProps> = ({ data }) => (
-  <div>
-    <SectionHeader title="Business rules" description={data.description} />
-    <div className="space-y-5">
-      {data.rules.map((rule, i) => (
-        <BusinessRuleDiff key={`${rule.name}-${i}`} rule={rule} />
-      ))}
-    </div>
-    {data.warning && <WarningBanner text={data.warning} />}
-  </div>
-);
-
-interface BusinessRuleDiffProps {
+interface BusinessRuleDetailProps {
   rule: BusinessRule;
 }
 
-const BusinessRuleDiff: React.FC<BusinessRuleDiffProps> = ({ rule }) => (
+export const BusinessRuleDetail: React.FC<BusinessRuleDetailProps> = ({ rule }) => (
   <div>
     <div className="mb-2 text-[11px] font-medium text-neutral-700">{rule.name}</div>
     <div className="flex gap-3 items-stretch">

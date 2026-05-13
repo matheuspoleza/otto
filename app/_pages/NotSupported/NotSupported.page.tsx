@@ -1,7 +1,7 @@
 import type React from 'react';
 import { AlertCircle, ArrowUpRight } from 'lucide-react';
 import type { MissingRequirement } from '@/app/_lib/eligibility';
-import { PRLensHeader } from '@/app/_pages/PRLens/components/PRLensHeader';
+import { PRDiagramHeader } from '@/app/_pages/PRDiagram/components/PRDiagramHeader';
 
 interface NotSupportedProps {
   owner: string;
@@ -17,7 +17,7 @@ export const NotSupported: React.FC<NotSupportedProps> = ({
   missing,
 }) => (
   <div className="min-h-screen w-full bg-neutral-50 flex flex-col font-sans antialiased text-neutral-900">
-    <PRLensHeader owner={owner} repo={repo} htmlUrl={htmlUrl} />
+    <PRDiagramHeader owner={owner} repo={repo} htmlUrl={htmlUrl} />
 
     <main className="flex-1 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-xl">
@@ -26,10 +26,10 @@ export const NotSupported: React.FC<NotSupportedProps> = ({
         </div>
 
         <h1 className="text-[22px] font-semibold text-neutral-900 leading-tight tracking-tight mb-2">
-          {owner}/{repo} isn&apos;t ready for PR Lens
+          {owner}/{repo} isn&apos;t ready for PR Diagram
         </h1>
         <p className="text-[14px] text-neutral-600 leading-relaxed mb-8">
-          PR Lens needs a few things in the repository to analyze a pull request. Once these are
+          PR Diagram needs a few things in the repository to analyze a pull request. Once these are
           present at the PR&apos;s head commit, this page will work automatically.
         </p>
 

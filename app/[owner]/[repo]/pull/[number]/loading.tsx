@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ExternalLink, GitPullRequest, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { GitPullRequest, Loader2 } from 'lucide-react';
 
 const STEPS = [
   'Fetching the pull request',
@@ -12,8 +13,8 @@ const STEPS = [
   'Mapping changed components',
   'Reading business logic',
   'Drafting the release summary',
-  'Scoring risk and surfacing follow-ups',
-  'Almost there',
+  'Tracing connections across files',
+  'Building the overview map',
 ] as const;
 
 const STEP_INTERVAL_MS = 600;
@@ -31,17 +32,24 @@ export default function Loading() {
   return (
     <div className="min-h-screen w-full bg-neutral-50 flex flex-col font-sans antialiased text-neutral-900">
       <header className="h-12 border-b border-neutral-200 bg-white flex items-center px-5 shrink-0">
-        <div className="flex items-center gap-2 text-sm font-medium">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-sm font-medium rounded-md -mx-1.5 px-1.5 py-1 hover:bg-neutral-100 transition-colors"
+          aria-label="Back to PR Diagram home"
+          title="Analyze another pull request"
+        >
           <div className="w-5 h-5 rounded-md bg-neutral-900 flex items-center justify-center">
             <GitPullRequest className="w-3 h-3 text-white" />
           </div>
-          <span className="text-neutral-900">PR Lens</span>
-        </div>
+          <span className="text-neutral-900">PR Diagram</span>
+        </Link>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-neutral-400 px-2.5 py-1 flex items-center gap-1.5">
-            <ExternalLink className="w-3 h-3" />
-            Open in GitHub
-          </span>
+          <Link
+            href="/"
+            className="text-xs text-neutral-700 hover:text-neutral-900 px-2.5 py-1 rounded-md border border-neutral-200 hover:bg-neutral-50 transition-colors flex items-center gap-1.5 font-medium"
+          >
+            Analyze another PR
+          </Link>
         </div>
       </header>
 

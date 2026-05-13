@@ -16,9 +16,3 @@ export const stateLabel = (state: PRMeta['state'], mergedAt: string | null): str
   if (state === 'merged' && mergedAt) return `merged ${timeAgo(mergedAt)}`;
   return state;
 };
-
-export const getRiskDot = (score: number): string => {
-  if (score >= 70) return 'bg-amber-500';
-  if (score >= 40) return 'bg-yellow-500';
-  return 'bg-emerald-500';
-};

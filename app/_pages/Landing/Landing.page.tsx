@@ -3,42 +3,17 @@
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, GitPullRequest } from 'lucide-react';
+import { ArrowRight, GitPullRequest, X } from 'lucide-react';
+import { track } from '@vercel/analytics';
+import type { DemoPR } from '@/app/_lib/demos';
+import { isAllowedPR } from '@/app/_lib/pr-allowlist';
 import { parsePRURL } from './parsePRURL';
 
-interface DemoPR {
-  owner: string;
-  repo: string;
-  number: number;
-  title: string;
+interface LandingProps {
+  demos: DemoPR[];
 }
 
-const DEMO_PRS: DemoPR[] = [
-  {
-    owner: 'matheuspoleza',
-    repo: 'pr-lens-demo',
-    number: 4,
-    title: 'Add usage-based billing for AI features',
-  },
-  {
-    owner: 'matheuspoleza',
-    repo: 'pr-lens-demo',
-    number: 3,
-    title: 'Redesign workspace settings page',
-  },
-  {
-    owner: 'matheuspoleza',
-    repo: 'pr-lens-demo',
-    number: 2,
-    title: 'Add GET /api/v1/workspaces/[id]/activity endpoint',
-  },
-  {
-    owner: 'matheuspoleza',
-    repo: 'pr-lens-demo',
-    number: 1,
-    title: 'Add priority field to tasks',
-  },
-];
+const TOAST_DURATION_MS = 6000;
 
 const useClickAway = (ref: React.RefObject<HTMLElement | null>, onAway: () => void) => {
   useEffect(() => {
@@ -50,29 +25,58 @@ const useClickAway = (ref: React.RefObject<HTMLElement | null>, onAway: () => vo
   }, [ref, onAway]);
 };
 
-export const Landing: React.FC = () => {
+export const Landing: React.FC<LandingProps> = ({ demos }) => {
   const router = useRouter();
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const containerRef = useRef<HTMLFormElement>(null);
   useClickAway(containerRef, () => setOpen(false));
 
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+    return () => window.clearTimeout(id);
+  }, [toast]);
+
   const parsed = parsePRURL(value);
-  const filtered = value.trim()
-    ? DEMO_PRS.filter(
+  const showInvalidHint = value.trim().length > 0 && parsed === null;
+  const filtered = value.trim() && !parsed
+    ? demos.filter(
         (d) =>
           d.title.toLowerCase().includes(value.toLowerCase()) ||
-          `#${d.number}`.includes(value),
+          `#${d.number}`.includes(value.trim()),
       )
-    : DEMO_PRS;
+    : demos;
 
-  const goTo = (owner: string, repo: string, number: number) => {
-    router.push(`/${owner}/${repo}/pull/${number}`);
+  const goToDemo = (d: DemoPR) => {
+    track('demo_selected', { number: d.number, repo: `${d.owner}/${d.repo}` });
+    router.push(`/${d.owner}/${d.repo}/pull/${d.number}`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (parsed) goTo(parsed.owner, parsed.repo, parsed.number);
+    if (!parsed) return;
+    const allowed = isAllowedPR(parsed.owner, parsed.repo);
+    track('pr_requested', {
+      owner: parsed.owner,
+      repo: parsed.repo,
+      number: parsed.number,
+      allowed,
+    });
+    if (allowed) {
+      router.push(`/${parsed.owner}/${parsed.repo}/pull/${parsed.number}`);
+    } else {
+      setToast(
+        `We're not analyzing ${parsed.owner}/${parsed.repo} yet — we'll prioritize PRs like this. Try a curated PR while you wait.`,
+      );
+      setOpen(true);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+    setOpen(true);
   };
 
   return (
@@ -82,19 +86,18 @@ export const Landing: React.FC = () => {
           <div className="w-5 h-5 rounded-md bg-neutral-900 flex items-center justify-center">
             <GitPullRequest className="w-3 h-3 text-white" />
           </div>
-          <span className="text-neutral-900">PR Lens</span>
+          <span className="text-neutral-900">PR Diagram</span>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-xl">
           <h1 className="text-[26px] font-semibold text-neutral-900 leading-tight tracking-tight mb-2">
-            Read a pull request without reading the code.
+            Turn any pull request into a visual diagram.
           </h1>
           <p className="text-[14px] text-neutral-600 leading-relaxed mb-8 max-w-lg">
-            PR Lens turns any GitHub pull request into a four-pillar summary — UI, API, Data,
-            Business — with a deterministic risk score and the reviewer actions a non-engineer can
-            act on.
+            Layered by pages, endpoints, tables, and the rules between them — so you understand any
+            change in seconds, instead of reading thousands of lines of code.
           </p>
 
           <form ref={containerRef} onSubmit={handleSubmit} className="relative">
@@ -102,15 +105,16 @@ export const Landing: React.FC = () => {
               <input
                 type="text"
                 value={value}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  setOpen(true);
-                }}
+                onChange={handleChange}
                 onFocus={() => setOpen(true)}
-                placeholder="Paste a GitHub PR URL"
+                placeholder="Paste a GitHub PR URL or pick a curated PR"
                 spellCheck={false}
                 autoComplete="off"
+                role="combobox"
                 aria-label="GitHub pull request URL"
+                aria-expanded={open}
+                aria-controls="pr-suggestions"
+                aria-autocomplete="list"
                 className="flex-1 h-10 px-3 text-[14px] bg-white border border-neutral-300 rounded-md focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
               />
               <button
@@ -125,17 +129,16 @@ export const Landing: React.FC = () => {
 
             {open && filtered.length > 0 && (
               <div className="absolute left-0 right-0 mt-2 bg-white border border-neutral-200 rounded-md shadow-lg overflow-hidden z-10">
-                <div className="px-3 py-1.5 text-[10px] font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100">
-                  Try a demo PR
-                </div>
-                <ul>
+                <ul id="pr-suggestions" role="listbox">
                   {filtered.map((d) => (
                     <li key={d.number}>
                       <button
                         type="button"
+                        role="option"
+                        aria-selected={false}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          goTo(d.owner, d.repo, d.number);
+                          goToDemo(d);
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-neutral-50 flex items-center gap-3 text-[13px]"
                       >
@@ -154,14 +157,38 @@ export const Landing: React.FC = () => {
             )}
           </form>
 
-          {value && !parsed && (
-            <p className="mt-2 text-[12px] text-neutral-500">
-              That doesn&apos;t look like a pull request URL. Try{' '}
-              <span className="font-mono">https://github.com/owner/repo/pull/123</span>.
-            </p>
-          )}
+          <div className="mt-2 min-h-[20px]" aria-live="polite">
+            {showInvalidHint && (
+              <p className="text-[12px] text-neutral-500">
+                That doesn&apos;t look like a pull request URL. Try{' '}
+                <span className="font-mono">https://github.com/owner/repo/pull/123</span>.
+              </p>
+            )}
+          </div>
         </div>
       </main>
+
+      <div
+        aria-live="polite"
+        className="fixed top-4 right-4 z-50 pointer-events-none flex justify-end"
+      >
+        {toast && (
+          <div
+            role="status"
+            className="pointer-events-auto max-w-sm bg-neutral-900 text-white text-[13px] rounded-md shadow-lg px-3 py-2.5 flex items-start gap-2 animate-[fadeIn_150ms_ease-out]"
+          >
+            <span className="flex-1 leading-relaxed">{toast}</span>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              aria-label="Dismiss"
+              className="shrink-0 text-neutral-400 hover:text-white transition-colors mt-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { Clock } from 'lucide-react';
-import { PRLensHeader } from '../PRLens/components/PRLensHeader';
+import { PRDiagramHeader } from '../PRDiagram/components/PRDiagramHeader';
 
 interface RateLimitReachedProps {
   owner: string;
@@ -19,7 +19,7 @@ const formatResetIn = (resetAt: Date): string => {
 
 export const RateLimitReached: React.FC<RateLimitReachedProps> = ({ owner, repo, resetAt }) => (
   <div className="min-h-screen w-full bg-neutral-50 flex flex-col font-sans antialiased text-neutral-900">
-    <PRLensHeader owner={owner} repo={repo} htmlUrl={`https://github.com/${owner}/${repo}`} />
+    <PRDiagramHeader owner={owner} repo={repo} htmlUrl={`https://github.com/${owner}/${repo}`} />
 
     <main className="flex-1 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-xl">

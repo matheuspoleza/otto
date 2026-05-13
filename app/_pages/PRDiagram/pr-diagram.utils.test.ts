@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getRiskDot, stateLabel, timeAgo } from './utils';
+import { stateLabel, timeAgo } from './pr-diagram.utils';
 
 describe('timeAgo', () => {
   const NOW = new Date('2026-05-13T12:00:00Z');
@@ -88,32 +88,6 @@ describe('stateLabel', () => {
   describe('Given state is "draft"', () => {
     it('then returns "draft"', () => {
       expect(stateLabel('draft', null)).toBe('draft');
-    });
-  });
-});
-
-describe('getRiskDot', () => {
-  describe('Given a score >= 70', () => {
-    it('then returns the amber class', () => {
-      expect(getRiskDot(70)).toBe('bg-amber-500');
-      expect(getRiskDot(85)).toBe('bg-amber-500');
-      expect(getRiskDot(100)).toBe('bg-amber-500');
-    });
-  });
-
-  describe('Given a score in [40, 70)', () => {
-    it('then returns the yellow class', () => {
-      expect(getRiskDot(40)).toBe('bg-yellow-500');
-      expect(getRiskDot(55)).toBe('bg-yellow-500');
-      expect(getRiskDot(69)).toBe('bg-yellow-500');
-    });
-  });
-
-  describe('Given a score < 40', () => {
-    it('then returns the emerald class', () => {
-      expect(getRiskDot(0)).toBe('bg-emerald-500');
-      expect(getRiskDot(20)).toBe('bg-emerald-500');
-      expect(getRiskDot(39)).toBe('bg-emerald-500');
     });
   });
 });
