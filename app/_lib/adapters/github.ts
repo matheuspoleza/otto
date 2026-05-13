@@ -1,5 +1,5 @@
 /**
- * GitHub REST API client for PR Lens.
+ * GitHub REST API client for PR Diagram.
  *
  * Public repos only — no auth required (60 req/h anonymous).
  * If GITHUB_TOKEN is set in the server env, it's used to lift the rate limit
@@ -93,6 +93,41 @@ export const getPR = async ({
   number: number;
 }): Promise<GitHubPR> => {
   return githubFetch<GitHubPR>(`/repos/${owner}/${repo}/pulls/${number}`);
+};
+
+export interface GitHubPullSummary {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  draft: boolean;
+  updated_at: string;
+}
+
+/**
+ * Lists pull requests on a repo. Default is open + closed, newest first, capped
+ * at `limit`. Lighter payload than `getPR` — meant for index pages, not analysis.
+ */
+export const listPullRequests = async ({
+  owner,
+  repo,
+  state = 'all',
+  limit = 6,
+}: {
+  owner: string;
+  repo: string;
+  state?: 'open' | 'closed' | 'all';
+  limit?: number;
+}): Promise<GitHubPullSummary[]> => {
+  const res = await githubFetch<GitHubPullSummary[]>(
+    `/repos/${owner}/${repo}/pulls?state=${state}&sort=updated&direction=desc&per_page=${limit}`,
+  );
+  return res.map((p) => ({
+    number: p.number,
+    title: p.title,
+    state: p.state,
+    draft: p.draft,
+    updated_at: p.updated_at,
+  }));
 };
 
 export type GitHubFileStatus =

@@ -251,11 +251,9 @@ describe('parseColumnDefinition', () => {
 
 describe('buildDataChanges', () => {
   describe('Given a fully empty parsed result', () => {
-    it('then returns zero count, empty description, no warning, reversible', () => {
+    it('then returns empty description and is reversible', () => {
       const result = buildDataChanges(createEmptyParsed());
-      expect(result.count).toBe(0);
       expect(result.description).toBe('');
-      expect(result.warning).toBeNull();
       expect(result.isReversible).toBe(true);
     });
   });
@@ -268,7 +266,6 @@ describe('buildDataChanges', () => {
       };
       const result = buildDataChanges(parsed);
       expect(result.description).toBe('Adds 1 new table (Task).');
-      expect(result.count).toBe(1);
     });
   });
 
@@ -320,24 +317,22 @@ describe('buildDataChanges', () => {
       const result = buildDataChanges(parsed);
       expect(result.description).toBe('Modifies 1 table.');
       expect(result.isReversible).toBe(true);
-      expect(result.warning).toBeNull();
     });
   });
 
   describe('Given a dropped table', () => {
-    it('then marks the change as non-reversible with a destructive warning', () => {
+    it('then marks the change as non-reversible', () => {
       const parsed: ParsedSQL = {
         ...createEmptyParsed(),
         droppedTables: ['LegacyOrders'],
       };
       const result = buildDataChanges(parsed);
       expect(result.isReversible).toBe(false);
-      expect(result.warning).toMatch(/drops tables/i);
     });
   });
 
   describe('Given a dropped column (no dropped tables)', () => {
-    it('then non-reversible with a column-loss warning', () => {
+    it('then non-reversible', () => {
       const parsed: ParsedSQL = {
         ...createEmptyParsed(),
         modifiedTables: new Map([
@@ -346,12 +341,11 @@ describe('buildDataChanges', () => {
       };
       const result = buildDataChanges(parsed);
       expect(result.isReversible).toBe(false);
-      expect(result.warning).toMatch(/drops columns/i);
     });
   });
 
   describe('Given a type change (no drops)', () => {
-    it('then non-reversible with a type-change warning', () => {
+    it('then non-reversible', () => {
       const parsed: ParsedSQL = {
         ...createEmptyParsed(),
         modifiedTables: new Map([
@@ -368,7 +362,6 @@ describe('buildDataChanges', () => {
       };
       const result = buildDataChanges(parsed);
       expect(result.isReversible).toBe(false);
-      expect(result.warning).toMatch(/changes column types/i);
     });
   });
 });

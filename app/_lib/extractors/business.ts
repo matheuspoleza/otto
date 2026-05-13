@@ -7,7 +7,7 @@
  * here is to identify the files and supply trimmed content to the LLM.
  */
 
-import { getFileContent, getPRFiles, type GitHubFileStatus } from '../github';
+import { getFileContent, getPRFiles, type GitHubFileStatus } from '../adapters/github';
 
 const BUSINESS_ROOT_RE = /^(lib|services|domain|core)\//;
 

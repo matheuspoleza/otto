@@ -29,7 +29,7 @@ describe('isUIFile', () => {
 
   describe('Given a test file', () => {
     it('then returns false', () => {
-      expect(isUIFile('app/_pages/PRLens/components/ChangeTabs.test.tsx')).toBe(false);
+      expect(isUIFile('app/_pages/PRDiagram/components/ChangeTabs.test.tsx')).toBe(false);
       expect(isUIFile('app/foo.spec.tsx')).toBe(false);
     });
   });
@@ -69,7 +69,7 @@ describe('deriveComponentName', () => {
 
   describe('Given a file with the .page.tsx skill suffix outside Next routes', () => {
     it('then strips the .page suffix', () => {
-      expect(deriveComponentName('app/_pages/PRLens/PRLens.page.tsx')).toBe('PRLens');
+      expect(deriveComponentName('app/_pages/PRDiagram/PRDiagram.page.tsx')).toBe('PRDiagram');
     });
   });
 
@@ -82,13 +82,11 @@ describe('deriveComponentName', () => {
 
 describe('buildUIChanges', () => {
   describe('Given no UI files', () => {
-    it('then returns count 0, empty description, empty arrays, no warning', () => {
+    it('then returns empty description and empty arrays', () => {
       const result = buildUIChanges([]);
-      expect(result.count).toBe(0);
       expect(result.description).toBe('');
       expect(result.changedComponents).toEqual([]);
       expect(result.screenshots).toEqual([]);
-      expect(result.warning).toBeNull();
     });
   });
 
@@ -102,10 +100,6 @@ describe('buildUIChanges', () => {
       },
     ];
     const result = buildUIChanges(files);
-
-    it('then count is 1', () => {
-      expect(result.count).toBe(1);
-    });
 
     it('then description uses the singular "1 component"', () => {
       expect(result.description).toBe('Modifies 1 component.');
@@ -175,10 +169,6 @@ describe('buildUIChanges', () => {
       expect(buildUIChanges(files).description).toBe(
         'Adds 1 new component. Modifies 2 components. Removes 1 component.',
       );
-    });
-
-    it('then count is the total of all UI changes', () => {
-      expect(buildUIChanges(files).count).toBe(4);
     });
   });
 });

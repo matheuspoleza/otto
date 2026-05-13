@@ -7,7 +7,7 @@
  * always-quoted identifiers). Not a general SQL parser.
  */
 
-import { getFileContent, getPRFiles } from '../github';
+import { getFileContent, getPRFiles } from '../adapters/github';
 import type { DataChanges, ModifiedTable, NewTable, SchemaColumn } from '../types';
 
 export interface ParsedSQL {
@@ -273,18 +273,16 @@ export const buildDataChanges = (parsed: ParsedSQL): DataChanges => {
   const droppedTables = parsed.droppedTables;
   const enums = parsed.newEnums;
 
-  const tableChangeCount = newTables.length + modifiedTables.length + droppedTables.length;
-  const totalForCount = tableChangeCount + enums.length;
+  const totalForCount =
+    newTables.length + modifiedTables.length + droppedTables.length + enums.length;
 
   if (totalForCount === 0) {
     return {
-      count: 0,
       description: '',
       newTables: [],
       modifiedTables: [],
       droppedTables: [],
       isReversible: true,
-      warning: null,
     };
   }
 
@@ -311,23 +309,12 @@ export const buildDataChanges = (parsed: ParsedSQL): DataChanges => {
   const typeChangeCount = modifiedTables.reduce((s, t) => s + t.typeChanges.length, 0);
   const isDestructive = droppedTables.length > 0 || droppedColCount > 0 || typeChangeCount > 0;
 
-  let warning: string | null = null;
-  if (droppedTables.length > 0) {
-    warning = 'Migration drops tables. This destroys data and is not reversible.';
-  } else if (droppedColCount > 0) {
-    warning = 'Migration drops columns. Existing data in those columns will be lost.';
-  } else if (typeChangeCount > 0) {
-    warning = 'Migration changes column types. Backup recommended before merge.';
-  }
-
   return {
-    count: tableChangeCount,
     description,
     newTables,
     modifiedTables,
     droppedTables,
     isReversible: !isDestructive,
-    warning,
   };
 };
 

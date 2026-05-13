@@ -1,49 +1,28 @@
 /**
- * Shape produced by the analysis pipeline and consumed by the PRLens UI.
+ * Shape produced by the analysis pipeline and consumed by the PRDiagram UI.
  * All fields must be JSON-serializable so this can cross the RSC boundary.
  */
 
-// ─── Target repo config (lives in the analyzed repo as prlens.config.json) ──
+// ─── Target repo config (lives in the analyzed repo as prdiagram.config.json) ──
 
 export type PreviewProvider = 'vercel' | 'netlify';
 export type Viewport = 'desktop' | 'mobile';
 
-export interface PRLensConfigRoute {
+export interface PRDiagramConfigRoute {
   path: string;
   name: string;
 }
 
-export interface PRLensConfigPreview {
+export interface PRDiagramConfigPreview {
   provider: PreviewProvider;
-  routes: PRLensConfigRoute[];
+  routes: PRDiagramConfigRoute[];
 }
 
-export interface PRLensConfig {
-  preview?: PRLensConfigPreview;
+export interface PRDiagramConfig {
+  preview?: PRDiagramConfigPreview;
   openapi?: string;
   prisma?: string;
   viewports?: Viewport[];
-}
-
-export type RiskLevel = 'Low' | 'Medium' | 'High';
-
-export type RiskSignalType = 'warn' | 'good';
-
-export interface RiskSignal {
-  type: RiskSignalType;
-  text: string;
-  key?: string;
-  evidenceFiles?: string[];
-}
-
-export type ActionIconKind = 'doc' | 'bell' | 'flask' | 'chat';
-
-export type ActionUrgency = 'Before merge' | 'After merge';
-
-export interface ActionItem {
-  iconKind: ActionIconKind;
-  text: string;
-  urgency: ActionUrgency;
 }
 
 export interface PRMeta {
@@ -58,12 +37,6 @@ export interface PRMeta {
   stateLabel: string;
   htmlUrl: string;
   headSha: string;
-}
-
-export interface RiskAssessment {
-  score: number;
-  level: RiskLevel;
-  signals: RiskSignal[];
 }
 
 // ─── UI bucket ──────────────────────────────────────────────────────────────
@@ -83,11 +56,9 @@ export interface RouteScreenshot {
 }
 
 export interface UIChanges {
-  count: number;
   description: string;
   changedComponents: ChangedComponent[];
   screenshots: RouteScreenshot[];
-  warning: string | null;
 }
 
 // ─── API bucket ─────────────────────────────────────────────────────────────
@@ -113,10 +84,8 @@ export interface EndpointChange {
 }
 
 export interface APIChanges {
-  count: number;
   description: string;
   endpoints: EndpointChange[];
-  warning: string | null;
 }
 
 // ─── Data bucket ────────────────────────────────────────────────────────────
@@ -142,13 +111,11 @@ export interface ModifiedTable {
 }
 
 export interface DataChanges {
-  count: number;
   description: string;
   newTables: NewTable[];
   modifiedTables: ModifiedTable[];
   droppedTables: string[];
   isReversible: boolean;
-  warning: string | null;
 }
 
 // ─── Business bucket ────────────────────────────────────────────────────────
@@ -163,23 +130,120 @@ export interface BusinessRule {
 }
 
 export interface BusinessChanges {
-  count: number;
   description: string;
   rules: BusinessRule[];
-  warning: string | null;
+}
+
+// ─── Previews (kind-specific node body in the diagram) ─────────────────────
+
+export interface PagePreviewData {
+  kind: 'page';
+  afterUrl: string | null;
+  routePath: string;
+}
+
+export interface ApiPreviewData {
+  kind: 'api';
+  method: HttpMethod;
+  path: string;
+  /** One-line deterministic hint of the change: "New endpoint" / "+ 2 fields" / "Breaking change" / etc. */
+  hint: string;
+}
+
+export type TableColumnHint = { prefix: '+' | '~' | '-'; name: string };
+
+export interface TablePreviewData {
+  kind: 'table';
+  tableName: string;
+  /** Up to 3 column-level changes; if more exist, `moreCount` reports the remainder. */
+  columnHints: TableColumnHint[];
+  moreCount: number;
+  isDropped: boolean;
+}
+
+// ─── Structural edges (page→api, api→table) ────────────────────────────────
+
+export type GraphEdgeLabel = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'writes' | null;
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  /** Sparse — HTTP method on page→api edges, "writes" on data-mutating edges, null elsewhere. */
+  label: GraphEdgeLabel;
+  /** "added" / "modified" / "removed" of either endpoint propagates here. */
+  status: ChangeStatus;
+}
+
+// ─── Canonical change union ─────────────────────────────────────────────────
+
+export type ChangeStatus = 'added' | 'modified' | 'removed';
+
+/**
+ * Discriminated union of everything the UI can navigate to. Each Change is
+ * self-contained: it carries its own id, status, preview content, and the
+ * detail payload the overlay needs to render. New node kinds (cron jobs,
+ * env vars, etc.) extend by adding one variant; selectors and the UI fan
+ * out from there.
+ */
+export type Change = PageChange | ApiChange | TableChange | RuleChange;
+
+export interface PageChange {
+  kind: 'page';
+  id: string;
+  route: string;
+  name: string;
+  status: ChangeStatus;
+  preview: PagePreviewData;
+  detail: { screenshot: RouteScreenshot };
+}
+
+export interface ApiChange {
+  kind: 'api';
+  id: string;
+  method: HttpMethod;
+  path: string;
+  status: ChangeStatus;
+  preview: ApiPreviewData;
+  detail: { endpoint: EndpointChange };
+  /** Ids of `RuleChange`s attached to this endpoint as badges. */
+  ruleIds: string[];
+}
+
+export type TableDetail =
+  | { variant: 'new'; table: NewTable }
+  | { variant: 'modified'; table: ModifiedTable }
+  | { variant: 'dropped'; name: string };
+
+export interface TableChange {
+  kind: 'table';
+  id: string;
+  name: string;
+  status: ChangeStatus;
+  preview: TablePreviewData;
+  detail: TableDetail;
+}
+
+export interface RuleChange {
+  kind: 'rule';
+  id: string;
+  name: string;
+  status: ChangeStatus;
+  detail: { rule: BusinessRule };
+  /** Id of the api/table Change this rule attaches to, or null if standalone. */
+  attachedToId: string | null;
 }
 
 // ─── Top level ──────────────────────────────────────────────────────────────
 
-export interface PRLensData {
+/**
+ * Canonical state produced by the analysis pipeline. Selectors derive every
+ * UI surface (diagram, index, overlay, markdown export) from this shape — no
+ * parallel arrays to keep in sync.
+ */
+export interface PRDiagramData {
   meta: PRMeta;
-  risk: RiskAssessment;
   domains: string[];
-  actions: ActionItem[];
-  changes: {
-    ui: UIChanges;
-    api: APIChanges;
-    data: DataChanges;
-    business: BusinessChanges;
-  };
+  changes: Change[];
+  edges: GraphEdge[];
 }

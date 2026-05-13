@@ -7,7 +7,7 @@
  */
 
 import { parse as parseYaml } from 'yaml';
-import { getFileContent, getPRFiles } from '../github';
+import { getFileContent, getPRFiles } from '../adapters/github';
 import type { APIChanges, EndpointChange, HttpMethod } from '../types';
 
 interface AnalyzeAPIParams {
@@ -36,17 +36,61 @@ export const analyzeAPIPillar = async ({
     getFileContent({ owner, repo, path: openapiPath, ref: headSha }),
   ]);
 
-  const beforeSpec = baseRaw ? safeParseYaml(baseRaw) : {};
-  const afterSpec = headRaw ? safeParseYaml(headRaw) : {};
+  const beforeSpec = resolveRefs(baseRaw ? safeParseYaml(baseRaw) : {});
+  const afterSpec = resolveRefs(headRaw ? safeParseYaml(headRaw) : {});
 
   return buildAPIChanges(diffOpenAPI(beforeSpec, afterSpec));
 };
 
+/**
+ * Inline OpenAPI `$ref` pointers so downstream consumers see actual schemas
+ * instead of `{$ref: "#/components/schemas/X"}`. Only resolves local (`#/...`)
+ * refs. Cycle-safe: a ref already on the current resolution path becomes a
+ * leaf `$ref` to avoid infinite recursion.
+ */
+export const resolveRefs = (spec: unknown): unknown => {
+  const root = spec;
+
+  const lookup = (ref: string): unknown => {
+    const path = ref.slice(2).split('/').map(decodeRefSegment);
+    let curr: unknown = root;
+    for (const seg of path) {
+      if (!curr || typeof curr !== 'object') return undefined;
+      curr = (curr as Record<string, unknown>)[seg];
+    }
+    return curr;
+  };
+
+  const walk = (node: unknown, chain: ReadonlySet<string>): unknown => {
+    if (!node || typeof node !== 'object') return node;
+    if (Array.isArray(node)) return node.map((n) => walk(n, chain));
+
+    const obj = node as Record<string, unknown>;
+    const ref = obj.$ref;
+    if (typeof ref === 'string' && ref.startsWith('#/')) {
+      if (chain.has(ref)) return { $ref: ref };
+      const target = lookup(ref);
+      if (target === undefined) return obj;
+      const next = new Set(chain);
+      next.add(ref);
+      return walk(target, next);
+    }
+
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = walk(v, chain);
+    }
+    return out;
+  };
+
+  return walk(spec, new Set());
+};
+
+const decodeRefSegment = (seg: string): string => seg.replace(/~1/g, '/').replace(/~0/g, '~');
+
 const emptyAPIChanges = (): APIChanges => ({
-  count: 0,
   description: '',
   endpoints: [],
-  warning: null,
 });
 
 const safeParseYaml = (raw: string): unknown => {
@@ -177,11 +221,9 @@ export const buildAPIChanges = (diff: RawAPIDiff): APIChanges => {
     });
   }
 
-  const count = endpoints.length;
-  const description = count === 0 ? '' : buildDescription(diff);
-  const warning = buildWarning(diff);
+  const description = endpoints.length === 0 ? '' : buildDescription(diff);
 
-  return { count, description, endpoints, warning };
+  return { description, endpoints };
 };
 
 const buildDescription = (diff: RawAPIDiff): string => {
@@ -196,17 +238,6 @@ const buildDescription = (diff: RawAPIDiff): string => {
     parts.push(`Removes ${pluralize(diff.removed.length, 'endpoint')}.`);
   }
   return parts.join(' ');
-};
-
-const buildWarning = (diff: RawAPIDiff): string | null => {
-  if (diff.removed.length > 0) {
-    return 'Removed endpoints are a breaking change for any existing client.';
-  }
-  const breakingCount = diff.modified.filter((m) => m.breaking).length;
-  if (breakingCount > 0) {
-    return `${pluralize(breakingCount, 'endpoint')} has breaking changes that may affect existing clients.`;
-  }
-  return null;
 };
 
 const pluralize = (n: number, singular: string): string =>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractSubtitle, prToMeta } from './analyze';
-import type { GitHubPR } from './github';
+import type { GitHubPR } from './adapters/github';
 
 const makePR = (overrides: Partial<GitHubPR> = {}): GitHubPR => ({
   number: 1,

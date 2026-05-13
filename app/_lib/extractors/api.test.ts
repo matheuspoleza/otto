@@ -178,11 +178,9 @@ describe('diffOpenAPI', () => {
 
 describe('buildAPIChanges', () => {
   describe('Given an empty diff', () => {
-    it('then returns count 0, empty description, no warning, no endpoints', () => {
+    it('then returns empty description and no endpoints', () => {
       const result = buildAPIChanges({ added: [], removed: [], modified: [] });
-      expect(result.count).toBe(0);
       expect(result.description).toBe('');
-      expect(result.warning).toBeNull();
       expect(result.endpoints).toEqual([]);
     });
   });
@@ -208,10 +206,6 @@ describe('buildAPIChanges', () => {
       removed: [],
       modified: [],
     };
-
-    it('then count is 1', () => {
-      expect(buildAPIChanges(diff).count).toBe(1);
-    });
 
     it('then description says "Adds 1 new endpoint."', () => {
       expect(buildAPIChanges(diff).description).toBe('Adds 1 new endpoint.');
@@ -242,10 +236,6 @@ describe('buildAPIChanges', () => {
         properties: { ok: { type: 'boolean' } },
       });
     });
-
-    it('then warning is null (additive change)', () => {
-      expect(buildAPIChanges(diff).warning).toBeNull();
-    });
   });
 
   describe('Given multiple added endpoints', () => {
@@ -259,7 +249,6 @@ describe('buildAPIChanges', () => {
         modified: [],
       };
       expect(buildAPIChanges(diff).description).toBe('Adds 2 new endpoints.');
-      expect(buildAPIChanges(diff).count).toBe(2);
     });
   });
 
@@ -296,10 +285,6 @@ describe('buildAPIChanges', () => {
       expect(buildAPIChanges(diff).endpoints[0].requestBefore).toEqual({ type: 'object' });
     });
 
-    it('then warning flags the removal as breaking', () => {
-      expect(buildAPIChanges(diff).warning).toMatch(/breaking|removed/i);
-    });
-
     it('then description mentions the removal', () => {
       expect(buildAPIChanges(diff).description).toMatch(/removes/i);
     });
@@ -325,10 +310,6 @@ describe('buildAPIChanges', () => {
 
     it('then changeType is "modified" (not "breaking")', () => {
       expect(buildAPIChanges(diff).endpoints[0].changeType).toBe('modified');
-    });
-
-    it('then warning is null', () => {
-      expect(buildAPIChanges(diff).warning).toBeNull();
     });
 
     it('then requestBefore and requestAfter are both populated', () => {
@@ -362,10 +343,6 @@ describe('buildAPIChanges', () => {
       expect(buildAPIChanges(diff).endpoints[0].breakingReason).toBe(
         'New required request property: b',
       );
-    });
-
-    it('then warning is set', () => {
-      expect(buildAPIChanges(diff).warning).toMatch(/breaking/i);
     });
   });
 });

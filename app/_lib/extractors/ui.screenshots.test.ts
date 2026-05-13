@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildRawGitHubURL, discoverScreenshots, slugifyRouteName } from './ui';
-import type { PRLensConfigRoute, Viewport } from '../types';
+import type { PRDiagramConfigRoute, Viewport } from '../types';
 
 describe('slugifyRouteName', () => {
   describe('Given a single PascalCase name', () => {
@@ -26,9 +26,9 @@ describe('buildRawGitHubURL', () => {
   describe('Given owner, repo, sha, and a file path', () => {
     it('then returns the raw.githubusercontent.com URL', () => {
       expect(
-        buildRawGitHubURL('acme', 'demo', 'abc123', '.prlens/screenshots/pricing-desktop.after.png'),
+        buildRawGitHubURL('acme', 'demo', 'abc123', '.prdiagram/screenshots/pricing-desktop.after.png'),
       ).toBe(
-        'https://raw.githubusercontent.com/acme/demo/abc123/.prlens/screenshots/pricing-desktop.after.png',
+        'https://raw.githubusercontent.com/acme/demo/abc123/.prdiagram/screenshots/pricing-desktop.after.png',
       );
     });
   });
@@ -56,19 +56,19 @@ describe('discoverScreenshots', () => {
 
   describe('Given a route whose both before and after files exist in the tree', () => {
     it('then returns one RouteScreenshot with both URLs populated', () => {
-      const routes: PRLensConfigRoute[] = [{ path: '/pricing', name: 'Pricing' }];
+      const routes: PRDiagramConfigRoute[] = [{ path: '/pricing', name: 'Pricing' }];
       const viewports: Viewport[] = ['desktop'];
       const treePaths = new Set([
-        '.prlens/screenshots/pricing-desktop.before.png',
-        '.prlens/screenshots/pricing-desktop.after.png',
+        '.prdiagram/screenshots/pricing-desktop.before.png',
+        '.prdiagram/screenshots/pricing-desktop.after.png',
       ]);
       const result = discoverScreenshots({ ...baseParams, routes, viewports, treePaths });
       expect(result).toEqual([
         {
           path: '/pricing',
           name: 'Pricing',
-          beforeUrl: 'https://raw.githubusercontent.com/acme/demo/sha/.prlens/screenshots/pricing-desktop.before.png',
-          afterUrl: 'https://raw.githubusercontent.com/acme/demo/sha/.prlens/screenshots/pricing-desktop.after.png',
+          beforeUrl: 'https://raw.githubusercontent.com/acme/demo/sha/.prdiagram/screenshots/pricing-desktop.before.png',
+          afterUrl: 'https://raw.githubusercontent.com/acme/demo/sha/.prdiagram/screenshots/pricing-desktop.after.png',
         },
       ]);
     });
@@ -80,7 +80,7 @@ describe('discoverScreenshots', () => {
         ...baseParams,
         routes: [{ path: '/pricing', name: 'Pricing' }],
         viewports: ['desktop'],
-        treePaths: new Set(['.prlens/screenshots/pricing-desktop.after.png']),
+        treePaths: new Set(['.prdiagram/screenshots/pricing-desktop.after.png']),
       });
       expect(result).toHaveLength(1);
       expect(result[0].beforeUrl).toBeNull();
@@ -94,7 +94,7 @@ describe('discoverScreenshots', () => {
         ...baseParams,
         routes: [{ path: '/legacy', name: 'Legacy' }],
         viewports: ['desktop'],
-        treePaths: new Set(['.prlens/screenshots/legacy-desktop.before.png']),
+        treePaths: new Set(['.prdiagram/screenshots/legacy-desktop.before.png']),
       });
       expect(result).toHaveLength(1);
       expect(result[0].beforeUrl).toMatch(/legacy-desktop\.before\.png$/);
@@ -121,8 +121,8 @@ describe('discoverScreenshots', () => {
         routes: [{ path: '/pricing', name: 'Pricing' }],
         viewports: ['desktop', 'mobile'],
         treePaths: new Set([
-          '.prlens/screenshots/pricing-desktop.after.png',
-          '.prlens/screenshots/pricing-mobile.after.png',
+          '.prdiagram/screenshots/pricing-desktop.after.png',
+          '.prdiagram/screenshots/pricing-mobile.after.png',
         ]),
       });
       expect(result).toHaveLength(2);
@@ -137,7 +137,7 @@ describe('discoverScreenshots', () => {
         ...baseParams,
         routes: [{ path: '/pricing', name: 'Pricing' }],
         viewports: ['desktop'],
-        treePaths: new Set(['.prlens/screenshots/pricing-desktop.after.png']),
+        treePaths: new Set(['.prdiagram/screenshots/pricing-desktop.after.png']),
       });
       expect(result[0].name).toBe('Pricing');
     });
@@ -149,7 +149,7 @@ describe('discoverScreenshots', () => {
         ...baseParams,
         routes: [{ path: '/workspaces/acme', name: 'Workspace Overview' }],
         viewports: ['desktop'],
-        treePaths: new Set(['.prlens/screenshots/workspace-overview-desktop.after.png']),
+        treePaths: new Set(['.prdiagram/screenshots/workspace-overview-desktop.after.png']),
       });
       expect(result).toHaveLength(1);
       expect(result[0].afterUrl).toMatch(/workspace-overview-desktop\.after\.png$/);

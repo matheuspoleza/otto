@@ -7,10 +7,10 @@
  * now the `screenshots` field stays empty and the UI shows a placeholder.
  */
 
-import { type GitHubFile, type GitHubFileStatus, getPRFiles, getRepoTree } from '../github';
+import { type GitHubFile, type GitHubFileStatus, getPRFiles, getRepoTree } from '../adapters/github';
 import type {
   ChangedComponent,
-  PRLensConfigRoute,
+  PRDiagramConfigRoute,
   RouteScreenshot,
   UIChanges,
   Viewport,
@@ -23,7 +23,8 @@ export interface UIFileInput {
   deletions: number;
 }
 
-const SCREENSHOTS_DIR = '.prlens/screenshots';
+// Back-compat: legacy `.prlens/screenshots` still resolves until demo repos migrate.
+const SCREENSHOTS_DIR_CANDIDATES = ['.prdiagram/screenshots', '.prlens/screenshots'] as const;
 
 export const slugifyRouteName = (name: string): string =>
   name
@@ -49,7 +50,7 @@ export const discoverScreenshots = ({
   owner: string;
   repo: string;
   headSha: string;
-  routes: PRLensConfigRoute[];
+  routes: PRDiagramConfigRoute[];
   viewports: Viewport[];
   treePaths: Set<string>;
 }): RouteScreenshot[] => {
@@ -57,16 +58,25 @@ export const discoverScreenshots = ({
   for (const route of routes) {
     const slug = slugifyRouteName(route.name);
     for (const vp of viewports) {
-      const beforeFile = `${SCREENSHOTS_DIR}/${slug}-${vp}.before.png`;
-      const afterFile = `${SCREENSHOTS_DIR}/${slug}-${vp}.after.png`;
-      const beforeExists = treePaths.has(beforeFile);
-      const afterExists = treePaths.has(afterFile);
-      if (!beforeExists && !afterExists) continue;
+      let beforeFile: string | null = null;
+      let afterFile: string | null = null;
+      for (const dir of SCREENSHOTS_DIR_CANDIDATES) {
+        if (!beforeFile) {
+          const candidate = `${dir}/${slug}-${vp}.before.png`;
+          if (treePaths.has(candidate)) beforeFile = candidate;
+        }
+        if (!afterFile) {
+          const candidate = `${dir}/${slug}-${vp}.after.png`;
+          if (treePaths.has(candidate)) afterFile = candidate;
+        }
+        if (beforeFile && afterFile) break;
+      }
+      if (!beforeFile && !afterFile) continue;
       out.push({
         path: route.path,
         name: viewports.length > 1 ? `${route.name} (${vp})` : route.name,
-        beforeUrl: beforeExists ? buildRawGitHubURL(owner, repo, headSha, beforeFile) : null,
-        afterUrl: afterExists ? buildRawGitHubURL(owner, repo, headSha, afterFile) : null,
+        beforeUrl: beforeFile ? buildRawGitHubURL(owner, repo, headSha, beforeFile) : null,
+        afterUrl: afterFile ? buildRawGitHubURL(owner, repo, headSha, afterFile) : null,
       });
     }
   }
@@ -130,7 +140,7 @@ interface AnalyzeUIParams {
   repo: string;
   prNumber: number;
   headSha: string;
-  routes: PRLensConfigRoute[];
+  routes: PRDiagramConfigRoute[];
   viewports: Viewport[];
 }
 
@@ -177,7 +187,6 @@ export const analyzeUIPillar = async ({
   return {
     ...base,
     screenshots,
-    count: base.changedComponents.length + screenshots.length,
   };
 };
 
@@ -199,10 +208,8 @@ export const buildUIChanges = (files: UIFileInput[]): UIChanges => {
   if (removed > 0) sentences.push(`Removes ${pluralize(removed, 'component')}.`);
 
   return {
-    count: files.length,
     description: sentences.join(' '),
     changedComponents,
     screenshots: [],
-    warning: null,
   };
 };

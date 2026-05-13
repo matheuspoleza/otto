@@ -1,27 +1,27 @@
 /**
  * Checks whether a target repo satisfies the controlled-scenario contract
- * needed for PR Lens analysis: TypeScript, OpenAPI spec, Prisma schema,
- * and a prlens.config.json declaring routes and paths.
+ * needed for PR Diagram analysis: TypeScript, OpenAPI spec, Prisma schema,
+ * and a prdiagram.config.json declaring routes and paths.
  *
  * Strategy: one tree listing call to map the repo's file paths, then targeted
  * content fetches only for files we actually need to read (the config).
  */
 
 import type {
-  PRLensConfig,
-  PRLensConfigPreview,
-  PRLensConfigRoute,
+  PRDiagramConfig,
+  PRDiagramConfigPreview,
+  PRDiagramConfigRoute,
   Viewport,
 } from './types';
-import { getFileContent, getRepoTree } from './github';
+import { getFileContent, getRepoTree } from './adapters/github';
 
 export type MissingRequirementKind =
   | 'typescript'
   | 'openapi'
   | 'prisma'
-  | 'prlens-config-missing'
-  | 'prlens-config-invalid'
-  | 'prlens-config-incomplete';
+  | 'prdiagram-config-missing'
+  | 'prdiagram-config-invalid'
+  | 'prdiagram-config-incomplete';
 
 export interface MissingRequirement {
   kind: MissingRequirementKind;
@@ -33,16 +33,18 @@ export interface RepoProfile {
   hasTypeScript: boolean;
   openapiPath: string;
   prismaPath: string;
-  routes: PRLensConfigRoute[];
+  routes: PRDiagramConfigRoute[];
   viewports: Viewport[];
 }
 
 export type EligibilityResult =
-  | { eligible: true; config: PRLensConfig; profile: RepoProfile }
+  | { eligible: true; config: PRDiagramConfig; profile: RepoProfile }
   | { eligible: false; missing: MissingRequirement[] };
 
 const TYPESCRIPT_INDICATOR = 'tsconfig.json';
-const PRLENS_CONFIG_PATH = 'prlens.config.json';
+const PRDIAGRAM_CONFIG_PATH = 'prdiagram.config.json';
+// Back-compat: repos onboarded under the old name still work until they migrate.
+const LEGACY_CONFIG_PATH = 'prlens.config.json';
 
 const OPENAPI_CANDIDATE_PATHS = [
   'openapi.yaml',
@@ -73,27 +75,33 @@ export const checkEligibility = async ({
   if (!hasTypeScript) {
     missing.push({
       kind: 'typescript',
-      description: 'PR Lens needs a TypeScript project (tsconfig.json at the repo root).',
+      description: 'PR Diagram needs a TypeScript project (tsconfig.json at the repo root).',
       searchedPaths: [TYPESCRIPT_INDICATOR],
     });
   }
 
+  const configPath = paths.has(PRDIAGRAM_CONFIG_PATH)
+    ? PRDIAGRAM_CONFIG_PATH
+    : paths.has(LEGACY_CONFIG_PATH)
+      ? LEGACY_CONFIG_PATH
+      : null;
+
   let configRaw: string | null = null;
-  if (paths.has(PRLENS_CONFIG_PATH)) {
-    configRaw = await getFileContent({ owner, repo, path: PRLENS_CONFIG_PATH, ref });
+  if (configPath) {
+    configRaw = await getFileContent({ owner, repo, path: configPath, ref });
   } else {
     missing.push({
-      kind: 'prlens-config-missing',
-      description: 'A prlens.config.json file is required at the repo root.',
-      searchedPaths: [PRLENS_CONFIG_PATH],
+      kind: 'prdiagram-config-missing',
+      description: 'A prdiagram.config.json file is required at the repo root.',
+      searchedPaths: [PRDIAGRAM_CONFIG_PATH, LEGACY_CONFIG_PATH],
     });
   }
 
   const parsedConfig = configRaw !== null ? parseConfig(configRaw) : null;
   if (configRaw !== null && parsedConfig === null) {
     missing.push({
-      kind: 'prlens-config-invalid',
-      description: 'prlens.config.json exists but is not valid JSON.',
+      kind: 'prdiagram-config-invalid',
+      description: 'prdiagram.config.json exists but is not valid JSON.',
     });
   }
 
@@ -105,7 +113,7 @@ export const checkEligibility = async ({
   if (!openapiPath) {
     missing.push({
       kind: 'openapi',
-      description: 'PR Lens needs an OpenAPI spec at a known path.',
+      description: 'PR Diagram needs an OpenAPI spec at a known path.',
       searchedPaths: parsedConfig?.openapi
         ? [parsedConfig.openapi]
         : OPENAPI_CANDIDATE_PATHS,
@@ -120,7 +128,7 @@ export const checkEligibility = async ({
   if (!prismaPath) {
     missing.push({
       kind: 'prisma',
-      description: 'PR Lens needs a Prisma schema at a known path.',
+      description: 'PR Diagram needs a Prisma schema at a known path.',
       searchedPaths: parsedConfig?.prisma
         ? [parsedConfig.prisma]
         : PRISMA_CANDIDATE_PATHS,
@@ -129,9 +137,9 @@ export const checkEligibility = async ({
 
   if (parsedConfig && (!parsedConfig.preview || parsedConfig.preview.routes.length === 0)) {
     missing.push({
-      kind: 'prlens-config-incomplete',
+      kind: 'prdiagram-config-incomplete',
       description:
-        'prlens.config.json must declare a `preview` section with at least one route to screenshot.',
+        'prdiagram.config.json must declare a `preview` section with at least one route to screenshot.',
     });
   }
 
@@ -139,7 +147,7 @@ export const checkEligibility = async ({
     return { eligible: false, missing };
   }
 
-  const config = parsedConfig as PRLensConfig;
+  const config = parsedConfig as PRDiagramConfig;
   return {
     eligible: true,
     config,
@@ -168,7 +176,7 @@ export const resolvePath = ({
   return candidates.find((p) => paths.has(p)) ?? null;
 };
 
-export const parseConfig = (raw: string): PRLensConfig | null => {
+export const parseConfig = (raw: string): PRDiagramConfig | null => {
   let json: unknown;
   try {
     json = JSON.parse(raw);
@@ -179,7 +187,7 @@ export const parseConfig = (raw: string): PRLensConfig | null => {
   if (!json || typeof json !== 'object' || Array.isArray(json)) return null;
   const obj = json as Record<string, unknown>;
 
-  const config: PRLensConfig = {};
+  const config: PRDiagramConfig = {};
 
   if (typeof obj.openapi === 'string') config.openapi = obj.openapi;
   if (typeof obj.prisma === 'string') config.prisma = obj.prisma;
@@ -199,12 +207,12 @@ export const parseConfig = (raw: string): PRLensConfig | null => {
   return config;
 };
 
-const parsePreview = (raw: Record<string, unknown>): PRLensConfigPreview | null => {
+const parsePreview = (raw: Record<string, unknown>): PRDiagramConfigPreview | null => {
   const provider = raw.provider;
   if (provider !== 'vercel' && provider !== 'netlify') return null;
   if (!Array.isArray(raw.routes)) return null;
 
-  const routes: PRLensConfigRoute[] = [];
+  const routes: PRDiagramConfigRoute[] = [];
   for (const r of raw.routes) {
     if (r && typeof r === 'object') {
       const obj = r as Record<string, unknown>;
