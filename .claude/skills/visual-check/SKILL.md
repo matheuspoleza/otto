@@ -32,7 +32,7 @@ The user shouldn't be the QA for UI changes when you have a browser-control MCP 
    ```
    Use `run_in_background: true`. Wait for "Ready" in the output (~3-5s) before navigating.
 
-2. **Decide which routes are affected.** List them concretely — don't just screenshot the landing page when you've changed a deep route. For PR Lens this typically means:
+2. **Decide which routes are affected.** List them concretely — don't just screenshot the landing page when you've changed a deep route. For PR Diagram this typically means:
    - `/` — landing
    - `/{owner}/{repo}/pull/{number}` — analysis page
    Plus any state-specific URLs (an ineligible repo, a rate-limited fetch, etc.) if the change touches those branches.
@@ -61,7 +61,7 @@ Don't just check that the page rendered without crashing. For each affected rout
 - The expected tab is the active one (e.g. for an API-only PR, the API tab should be active by default)
 - Empty buckets render their disabled/zero state correctly (not as broken)
 - Warning banners appear when they should, and don't when they shouldn't
-- Text doesn't overflow, truncate awkwardly, or wrap badly at the breakpoints in `prlens.config.json` viewports
+- Text doesn't overflow, truncate awkwardly, or wrap badly at the breakpoints in `prdiagram.config.json` viewports
 
 If the route depends on external data (GitHub API), make sure `GITHUB_TOKEN` is exported in the dev server's environment — without it you'll likely hit the rate-limit screen and won't see what you intended to verify.
 
